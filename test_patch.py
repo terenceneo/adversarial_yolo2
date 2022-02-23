@@ -21,7 +21,7 @@ if __name__ == '__main__':
     imgdir = "inria/Test/pos"
     cfgfile = "cfg/yolo.cfg"
     weightfile = "weights/yolo.weights"
-    patchfile = "pics/20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg"
+    patchfile = "pics/20220223-161301_ObjectOnlyPaper_3_1.15205979347229.jpg"
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     print("Done")
     #Loop over cleane beelden
     for imgfile in tqdm(os.listdir(imgdir)):
-        print("\nnew image")
+        # print("\nnew image")
         if imgfile.endswith('.jpg') or imgfile.endswith('.png'):
             name = os.path.splitext(imgfile)[0]    #image name w/o extension
             txtname = name + '.txt'
@@ -79,7 +79,7 @@ if __name__ == '__main__':
             padded_img = resize(padded_img)
             cleanname = name + ".png"
             #sla dit beeld op
-            padded_img.save(os.path.join(savedir, 'clean/', cleanname))
+            # padded_img.save(os.path.join(savedir, 'clean/', cleanname))
             
             #genereer een label file voor het gepadde beeld
             boxes = do_detect(darknet_model, padded_img, 0.4, 0.4, True)
@@ -126,7 +126,7 @@ if __name__ == '__main__':
             p_img = p_img_batch.squeeze(0)
             p_img_pil = transforms.ToPILImage('RGB')(p_img.cpu())
             properpatchedname = name + "_p.png"
-            p_img_pil.save(os.path.join(savedir, 'proper_patched/', properpatchedname))
+            # p_img_pil.save(os.path.join(savedir, 'proper_patched/', properpatchedname))
             
             #genereer een label file voor het beeld met sticker
             txtname = properpatchedname.replace('.png', '.txt')
@@ -156,7 +156,7 @@ if __name__ == '__main__':
             p_img = p_img_batch.squeeze(0)
             p_img_pil = transforms.ToPILImage('RGB')(p_img.cpu())
             properpatchedname = name + "_rdp.png"
-            p_img_pil.save(os.path.join(savedir, 'random_patched/', properpatchedname))
+            # p_img_pil.save(os.path.join(savedir, 'random_patched/', properpatchedname))
             
             #genereer een label file voor het beeld met random patch
             txtname = properpatchedname.replace('.png', '.txt')
