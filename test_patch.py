@@ -1,6 +1,7 @@
 import sys
 import time
 import os
+from numpy import save
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -12,6 +13,7 @@ from utils import *
 from darknet import *
 from load_data import PatchTransformer, PatchApplier, InriaDataset
 import json
+from tqdm import tqdm
 
 
 if __name__ == '__main__':
@@ -19,11 +21,12 @@ if __name__ == '__main__':
     imgdir = "inria/Test/pos"
     cfgfile = "cfg/yolo.cfg"
     weightfile = "weights/yolo.weights"
-    patchfile = "pics/20220223-161301_ObjectOnlyPaper_3_1.15205979347229.jpg"
+    patchfile = "pics/20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg"
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
-    savedir = "testing"
+    savedir = "testing/labelled"
+    class_names = open("coco-labels-2014_2017.txt", "r").readlines()
 
     darknet_model = Darknet(cfgfile)
     darknet_model.load_weights(weightfile)
@@ -50,8 +53,8 @@ if __name__ == '__main__':
     
     print("Done")
     #Loop over cleane beelden
-    for imgfile in os.listdir(imgdir):
-        print("new image")
+    for imgfile in tqdm(os.listdir(imgdir)):
+        print("\nnew image")
         if imgfile.endswith('.jpg') or imgfile.endswith('.png'):
             name = os.path.splitext(imgfile)[0]    #image name w/o extension
             txtname = name + '.txt'
@@ -98,6 +101,10 @@ if __name__ == '__main__':
                                           'category_id': 1})
             textfile.close()
 
+            # plot bouding boxes
+            plot_boxes(padded_img, boxes, savename=os.path.join(savedir, 'clean/', cleanname), class_names=class_names)
+
+            # proper patched
             #lees deze labelfile terug in als tensor            
             if os.path.getsize(txtpath):       #check to see if label file contains data. 
                 label = np.loadtxt(txtpath)
@@ -138,6 +145,10 @@ if __name__ == '__main__':
                     patch_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
             textfile.close()
 
+            # plot bouding boxes
+            plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, 'proper_patched/', properpatchedname), class_names=class_names)
+
+            # Random patch
             #maak een random patch, transformeer hem en voeg hem toe aan beeld
             random_patch = torch.rand(adv_patch_cpu.size()).cuda()
             adv_batch_t = patch_transformer(random_patch, lab_fake_batch, img_size, do_rotate=True, rand_loc=False)
@@ -163,6 +174,9 @@ if __name__ == '__main__':
                     textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
                     noise_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
             textfile.close()
+
+            # plot bouding boxes
+            plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, 'random_patched/', properpatchedname), class_names=class_names)
 
     with open('clean_results.json', 'w') as fp:
         json.dump(clean_results, fp)

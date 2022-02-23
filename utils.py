@@ -275,7 +275,7 @@ def plot_boxes(img, boxes, savename=None, class_names=None):
             draw.text((x1, y1), class_names[cls_id], fill=rgb)
         draw.rectangle([x1, y1, x2, y2], outline = rgb)
     if savename:
-        print("save plot results to %s" % savename)
+        # print("save plot results to %s" % savename)
         img.save(savename)
     return img
 
