@@ -57,8 +57,9 @@ class PatchTrainer(object):
         time_str = time.strftime("%Y%m%d-%H%M%S")
 
         # Generate stating point
-        adv_patch_cpu = self.generate_patch("gray")
-        #adv_patch_cpu = self.read_image("saved_patches/patchnew0.jpg")
+        # adv_patch_cpu = self.generate_patch("gray")
+        adv_patch_cpu = self.read_image("saved_patches/dsologo.jpg")
+        # adv_patch_cpu = self.read_image("saved_patches/patchnew0.jpg")
 
         adv_patch_cpu.requires_grad_(True)
 
@@ -66,7 +67,7 @@ class PatchTrainer(object):
                                                                 shuffle=True),
                                                    batch_size=batch_size,
                                                    shuffle=True,
-                                                   num_workers=10)
+                                                   num_workers=8)
         self.epoch_length = len(train_loader)
         print(f'One epoch is {len(train_loader)}')
 
@@ -141,9 +142,10 @@ class PatchTrainer(object):
             ep_tv_loss = ep_tv_loss/len(train_loader)
             ep_loss = ep_loss/len(train_loader)
 
-            #im = transforms.ToPILImage('RGB')(adv_patch_cpu)
-            #plt.imshow(im)
-            #plt.savefig(f'pics/{time_str}_{self.config.patch_name}_{epoch}.png')
+            # save patch at end of epoch
+            # im = transforms.ToPILImage('RGB')(adv_patch_cpu)
+            # plt.imshow(im)
+            # plt.savefig(f'pics/{time_str}_{self.config.patch_name}_{epoch}.png')
 
             scheduler.step(ep_loss)
             if True:
@@ -153,10 +155,11 @@ class PatchTrainer(object):
                 print('  NPS LOSS: ', ep_nps_loss)
                 print('   TV LOSS: ', ep_tv_loss)
                 print('EPOCH TIME: ', et1-et0)
-                #im = transforms.ToPILImage('RGB')(adv_patch_cpu)
+                im = transforms.ToPILImage('RGB')(adv_patch_cpu)
                 #plt.imshow(im)
                 #plt.show()
-                #im.save("saved_patches/patchnew1.jpg")
+                # im.save("saved_patches/patchnew1.jpg")
+                im.save(f'pics/{time_str}_{self.config.patch_name}_{epoch}_{ep_loss}.jpg')
                 del adv_batch_t, output, max_prob, det_loss, p_img_batch, nps_loss, tv_loss, loss
                 torch.cuda.empty_cache()
             et0 = time.time()
