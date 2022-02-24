@@ -23,13 +23,14 @@ if __name__ == '__main__':
     weightfile = "weights/yolo.weights"
     
     patchdir = "pics/"
-    patchfiles = {2: "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
-    100: "20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg", 
-    150: "20220223-161301_ObjectOnlyPaper_150_0.7733585238456726.jpg"} # key is the epoch number
+    patchfiles = {"test": "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg"}
+    # patchfiles = {2: "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
+    # 100: "20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg", 
+    # 150: "20220223-161301_ObjectOnlyPaper_150_0.7733585238456726.jpg"} # key is the epoch number
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
-    savedir = "testing/labelled"
+    savedir_base = "testing/labelled"
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
 
     darknet_model = Darknet(cfgfile)
@@ -46,7 +47,7 @@ if __name__ == '__main__':
 
     for e in patchfiles:
         patchfile = patchdir + patchfiles[e]
-        savedir += f"_{e}"
+        savedir = f"{savedir_base}_{e}"
 
         # make saving directory if not exist
         for dir in [os.path.join(savedir, 'clean/', 'yolo-labels/'),
