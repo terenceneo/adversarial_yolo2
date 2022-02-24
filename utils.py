@@ -144,7 +144,7 @@ def get_region_boxes(output, conf_thresh, num_classes, anchors, num_anchors, onl
     det_confs = torch.sigmoid(output[4])
 
     cls_confs = torch.nn.Softmax()(Variable(output[5:5+num_classes].transpose(0,1))).data
-    print(cls_confs.size())
+    # print(cls_confs.size())
     cls_max_confs, cls_max_ids = torch.max(cls_confs, 1)
     cls_max_confs = cls_max_confs.view(-1)
     cls_max_ids = cls_max_ids.view(-1)
@@ -226,7 +226,7 @@ def plot_boxes_cv2(img, boxes, savename=None, class_names=None, color=None):
         if len(box) >= 7 and class_names:
             cls_conf = box[5]
             cls_id = box[6]
-            print('%s: %f' % (class_names[cls_id], cls_conf))
+            # print('%s: %f' % (class_names[cls_id], cls_conf))
             classes = len(class_names)
             offset = cls_id * 123457 % classes
             red   = get_color(2, offset, classes)
@@ -263,16 +263,17 @@ def plot_boxes(img, boxes, savename=None, class_names=None):
 
         rgb = (255, 0, 0)
         if len(box) >= 7 and class_names:
-            cls_conf = box[5]
-            cls_id = box[6]
-            print('[%i]%s: %f' % (cls_id, class_names[cls_id], cls_conf))
-            classes = len(class_names)
-            offset = cls_id * 123457 % classes
-            red   = get_color(2, offset, classes)
-            green = get_color(1, offset, classes)
-            blue  = get_color(0, offset, classes)
-            rgb = (red, green, blue)
-            draw.text((x1, y1), class_names[cls_id], fill=rgb)
+            cls_conf = round(float(box[5]),2)
+            if cls_conf >= 0.9:
+                cls_id = box[6]
+                # print('[%i]%s: %f' % (cls_id, class_names[cls_id], cls_conf))
+                classes = len(class_names)
+                offset = cls_id * 123457 % classes
+                red   = get_color(2, offset, classes)
+                green = get_color(1, offset, classes)
+                blue  = get_color(0, offset, classes)
+                rgb = (red, green, blue)
+                draw.text((x1, y1), class_names[cls_id] + str(cls_conf), fill=rgb)
         draw.rectangle([x1, y1, x2, y2], outline = rgb)
     if savename:
         # print("save plot results to %s" % savename)
