@@ -100,7 +100,7 @@ def nms(boxes, nms_thresh):
             for j in range(i+1, len(boxes)):
                 box_j = boxes[sortIds[j]]
                 if bbox_iou(box_i, box_j, x1y1x2y2=False) > nms_thresh:
-                    #print(box_i, box_j, bbox_iou(box_i, box_j, x1y1x2y2=False))
+                    # print(box_i, box_j, bbox_iou(box_i, box_j, x1y1x2y2=False))
                     box_j[4] = 0
     return out_boxes
 
@@ -241,7 +241,8 @@ def plot_boxes_cv2(img, boxes, savename=None, class_names=None, color=None):
         cv2.imwrite(savename, img)
     return img
 
-def plot_boxes(img, boxes, savename=None, class_names=None):
+def plot_boxes(img1, boxes, savename=None, class_names=None):
+    img = img1.copy()
     colors = torch.FloatTensor([[1,0,1],[0,0,1],[0,1,1],[0,1,0],[1,1,0],[1,0,0]]);
     def get_color(c, x, max_val):
         ratio = float(x)/max_val * 5
@@ -264,17 +265,16 @@ def plot_boxes(img, boxes, savename=None, class_names=None):
         rgb = (255, 0, 0)
         if len(box) >= 7 and class_names:
             cls_conf = round(float(box[5]),2)
-            if cls_conf >= 0.9:
-                cls_id = box[6]
-                # print('[%i]%s: %f' % (cls_id, class_names[cls_id], cls_conf))
-                classes = len(class_names)
-                offset = cls_id * 123457 % classes
-                red   = get_color(2, offset, classes)
-                green = get_color(1, offset, classes)
-                blue  = get_color(0, offset, classes)
-                rgb = (red, green, blue)
-                draw.text((x1, y1), class_names[cls_id] + str(cls_conf), fill=rgb)
-                draw.rectangle([x1, y1, x2, y2], outline = rgb)
+            cls_id = box[6]
+            # print('[%i]%s: %f' % (cls_id, class_names[cls_id], cls_conf))
+            classes = len(class_names)
+            offset = cls_id * 123457 % classes
+            red   = get_color(2, offset, classes)
+            green = get_color(1, offset, classes)
+            blue  = get_color(0, offset, classes)
+            rgb = (red, green, blue)
+            draw.text((x1, y1), class_names[cls_id] + str(cls_conf), fill=rgb)
+            draw.rectangle([x1, y1, x2, y2], outline = rgb)
     if savename:
         # print("save plot results to %s" % savename)
         img.save(savename)
