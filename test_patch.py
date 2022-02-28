@@ -19,18 +19,26 @@ from tqdm import tqdm
 if __name__ == '__main__':
     print("Setting everything up")
     imgdir = "inria/Test/pos"
+    # imgdir = "testing/testimages"
     cfgfile = "cfg/yolo.cfg"
     weightfile = "weights/yolo.weights"
     
     patchdir = "pics/"
-    patchfiles = {"test": "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg"}
+    # patchfiles = {"2": "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
+    # "150": "20220223-161301_ObjectOnlyPaper_150_0.7733585238456726.jpg",
+    # "circle": "toast_270.png",
+    # "original": "object_score.png"}
+    patchfiles = {"masked_scaled_white": "masked_patch_scaled_white.jpg",
+    "masked_inverse_scaled_white": "masked_patch_inverse_scaled_white.jpg"}
     # patchfiles = {2: "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
     # 100: "20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg", 
     # 150: "20220223-161301_ObjectOnlyPaper_150_0.7733585238456726.jpg"} # key is the epoch number
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
-    savedir_base = "testing/labelled"
+    savedir = "testing/labelled_masked"
+    conf_thresh = 0.6
+    nms_thresh = 0.4
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
 
     darknet_model = Darknet(cfgfile)
@@ -44,111 +52,121 @@ if __name__ == '__main__':
     img_size = darknet_model.height
 
     patch_size = 300
+    
+    savedirs = [os.path.join(savedir, 'clean/', 'yolo-labels/'),
+    os.path.join(savedir, 'random_patched/', 'yolo-labels/')]
 
+    adv_patchs = {}
+
+    clean_results = []
+    noise_results = []
+    patch_results = {}
+    
     for e in patchfiles:
+        savedirs.append(os.path.join(savedir, f'proper_patched_{e}/', 'yolo-labels/'))
+        
+        # create patches
         patchfile = patchdir + patchfiles[e]
-        savedir = f"{savedir_base}_{e}"
-
-        # make saving directory if not exist
-        for dir in [os.path.join(savedir, 'clean/', 'yolo-labels/'),
-        os.path.join(savedir, 'proper_patched/', 'yolo-labels/'),
-        os.path.join(savedir, 'random_patched/', 'yolo-labels/')]:
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-
         patch_img = Image.open(patchfile).convert('RGB')
         tf = transforms.Resize((patch_size,patch_size))
         patch_img = tf(patch_img)
         tf = transforms.ToTensor()
         adv_patch_cpu = tf(patch_img)
-        adv_patch = adv_patch_cpu.cuda()
+        adv_patchs[e] = adv_patch_cpu.cuda()
 
-        clean_results = []
-        noise_results = []
-        patch_results = []
-        
-        print("Done")
-        #Loop over cleane beelden
-        for imgfile in tqdm(os.listdir(imgdir), desc=patchfile):
-            # print("\nnew image")
-            if imgfile.endswith('.jpg') or imgfile.endswith('.png'):
-                name = os.path.splitext(imgfile)[0]    #image name w/o extension
-                txtname = name + '.txt'
-                txtpath = os.path.abspath(os.path.join(savedir, 'clean/', 'yolo-labels/', txtname))
-                # open beeld en pas aan naar yolo input size
-                imgfile = os.path.abspath(os.path.join(imgdir, imgfile))
-                img = Image.open(imgfile).convert('RGB')
-                w,h = img.size
-                if w==h:
-                    padded_img = img
+        # for saving boxes
+        patch_results[e] = []
+
+    # make saving directory if not exist
+    for dir in savedirs:
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+    
+    print("Done")
+    #Loop over cleane beelden
+    for imgfile in tqdm(os.listdir(imgdir)):
+        # print("\nnew image")
+        if imgfile.endswith('.jpg') or imgfile.endswith('.png'):
+            name = os.path.splitext(imgfile)[0]    #image name w/o extension
+            txtname = name + '.txt'
+            txtpath = os.path.abspath(os.path.join(savedir, 'clean/', 'yolo-labels/', txtname))
+            # open beeld en pas aan naar yolo input size
+            # pad image
+            imgfile = os.path.abspath(os.path.join(imgdir, imgfile))
+            img = Image.open(imgfile).convert('RGB')
+            w,h = img.size
+            if w==h:
+                padded_img = img
+            else:
+                dim_to_pad = 1 if w<h else 2
+                if dim_to_pad == 1:
+                    padding = (h - w) / 2
+                    padded_img = Image.new('RGB', (h,h), color=(127,127,127))
+                    padded_img.paste(img, (int(padding), 0))
                 else:
-                    dim_to_pad = 1 if w<h else 2
-                    if dim_to_pad == 1:
-                        padding = (h - w) / 2
-                        padded_img = Image.new('RGB', (h,h), color=(127,127,127))
-                        padded_img.paste(img, (int(padding), 0))
-                    else:
-                        padding = (w - h) / 2
-                        padded_img = Image.new('RGB', (w, w), color=(127,127,127))
-                        padded_img.paste(img, (0, int(padding)))
-                resize = transforms.Resize((img_size,img_size))
-                padded_img = resize(padded_img)
-                cleanname = name + ".png"
-                #sla dit beeld op
-                # padded_img.save(os.path.join(savedir, 'clean/', cleanname))
-                
-                #genereer een label file voor het gepadde beeld
-                boxes = do_detect(darknet_model, padded_img, 0.4, 0.4, True)
-                boxes = nms(boxes, 0.4)
-                textfile = open(txtpath,'w+')
-                for box in boxes:
-                    cls_id = box[6]
-                    if(cls_id == 0):   #if person
-                        x_center = box[0]
-                        y_center = box[1]
-                        width = box[2]
-                        height = box[3]
-                        textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
-                        clean_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2,
-                                                                        y_center.item() - height.item() / 2,
-                                                                        width.item(),
-                                                                        height.item()],
-                                            'score': box[4].item(),
-                                            'category_id': 1})
-                textfile.close()
+                    padding = (w - h) / 2
+                    padded_img = Image.new('RGB', (w, w), color=(127,127,127))
+                    padded_img.paste(img, (0, int(padding)))
+            resize = transforms.Resize((img_size,img_size))
+            padded_img = resize(padded_img)
+            cleanname = name + ".png"
+            #sla dit beeld op
+            # padded_img.save(os.path.join(savedir, 'clean/', cleanname))
+            
+            # clean
+            #genereer een label file voor het gepadde beeld
+            boxes = do_detect(darknet_model, padded_img, conf_thresh, nms_thresh, True)
+            textfile = open(txtpath,'w+')
+            for box in boxes:
+                cls_id = box[6]
+                if(cls_id == 0):   #if person
+                    x_center = box[0]
+                    y_center = box[1]
+                    width = box[2]
+                    height = box[3]
+                    textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
+                    clean_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2,
+                                                                    y_center.item() - height.item() / 2,
+                                                                    width.item(),
+                                                                    height.item()],
+                                        'score': box[4].item(),
+                                        'category_id': 1})
+            textfile.close()
 
-                # plot bouding boxes
-                plot_boxes(padded_img, boxes, savename=os.path.join(savedir, 'clean/', cleanname), class_names=class_names)
+            # plot bouding boxes
+            print("\nClean image:", cleanname, "\tBoxes:", len(boxes))
+            plot_boxes(padded_img, boxes, savename=os.path.join(savedir, 'clean/', cleanname), class_names=class_names)
 
-                # proper patched
-                #lees deze labelfile terug in als tensor            
-                if os.path.getsize(txtpath):       #check to see if label file contains data. 
-                    label = np.loadtxt(txtpath)
-                else:
-                    label = np.ones([5])
-                label = torch.from_numpy(label).float()
-                if label.dim() == 1:
-                    label = label.unsqueeze(0)
+            #lees deze labelfile terug in als tensor            
+            if os.path.getsize(txtpath):       #check to see if label file contains data. 
+                label = np.loadtxt(txtpath)
+            else:
+                label = np.ones([5])
+            label = torch.from_numpy(label).float()
+            if label.dim() == 1:
+                label = label.unsqueeze(0)
 
-                
-                transform = transforms.ToTensor()
-                padded_img = transform(padded_img).cuda()
-                img_fake_batch = padded_img.unsqueeze(0)
-                lab_fake_batch = label.unsqueeze(0).cuda()
-                
+            
+            transform = transforms.ToTensor()
+            padded_img = transform(padded_img).cuda()
+            img_fake_batch = padded_img.unsqueeze(0)
+            lab_fake_batch = label.unsqueeze(0).cuda()
+
+            # proper patched
+            for e in patchfiles:
                 #transformeer patch en voeg hem toe aan beeld
+                adv_patch = adv_patchs[e]
                 adv_batch_t = patch_transformer(adv_patch, lab_fake_batch, img_size, do_rotate=True, rand_loc=False)
                 p_img_batch = patch_applier(img_fake_batch, adv_batch_t)
                 p_img = p_img_batch.squeeze(0)
-                p_img_pil = transforms.ToPILImage('RGB')(p_img.cpu())
+                p_img_pil = transforms.ToPILImage('RGB')(p_img.cuda())
                 properpatchedname = name + "_p.png"
-                # p_img_pil.save(os.path.join(savedir, 'proper_patched/', properpatchedname))
+                # p_img_pil.save(os.path.join(savedir, f'proper_patched_{e}/', properpatchedname))
                 
                 #genereer een label file voor het beeld met sticker
                 txtname = properpatchedname.replace('.png', '.txt')
-                txtpath = os.path.abspath(os.path.join(savedir, 'proper_patched/', 'yolo-labels/', txtname))
-                boxes = do_detect(darknet_model, p_img_pil, 0.01, 0.4, True)
-                boxes = nms(boxes, 0.4)
+                txtpath = os.path.abspath(os.path.join(savedir, f'proper_patched_{e}/', 'yolo-labels/', txtname))
+                boxes = do_detect(darknet_model, p_img_pil, conf_thresh, nms_thresh, True)
                 textfile = open(txtpath,'w+')
                 for box in boxes:
                     cls_id = box[6]
@@ -158,47 +176,49 @@ if __name__ == '__main__':
                         width = box[2]
                         height = box[3]
                         textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
-                        patch_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
+                        patch_results[e].append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
                 textfile.close()
-
-                # plot bouding boxes
-                plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, 'proper_patched/', properpatchedname), class_names=class_names)
-
-                # # Random patch
-                # #maak een random patch, transformeer hem en voeg hem toe aan beeld
-                # random_patch = torch.rand(adv_patch_cpu.size()).cuda()
-                # adv_batch_t = patch_transformer(random_patch, lab_fake_batch, img_size, do_rotate=True, rand_loc=False)
-                # p_img_batch = patch_applier(img_fake_batch, adv_batch_t)
-                # p_img = p_img_batch.squeeze(0)
-                # p_img_pil = transforms.ToPILImage('RGB')(p_img.cpu())
-                # properpatchedname = name + "_rdp.png"
-                # # p_img_pil.save(os.path.join(savedir, 'random_patched/', properpatchedname))
                 
-                # #genereer een label file voor het beeld met random patch
-                # txtname = properpatchedname.replace('.png', '.txt')
-                # txtpath = os.path.abspath(os.path.join(savedir, 'random_patched/', 'yolo-labels/', txtname))
-                # boxes = do_detect(darknet_model, p_img_pil, 0.01, 0.4, True)
-                # boxes = nms(boxes, 0.4)
-                # textfile = open(txtpath,'w+')
-                # for box in boxes:
-                #     cls_id = box[6]
-                #     if(cls_id == 0):   #if person
-                #         x_center = box[0]
-                #         y_center = box[1]
-                #         width = box[2]
-                #         height = box[3]
-                #         textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
-                #         noise_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
-                # textfile.close()
+                # plot bouding boxes
+                print("Patch:", e, "\timage:", properpatchedname, "\tBoxes:", len(boxes))
+                plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, f'proper_patched_{e}/', properpatchedname), class_names=class_names)
 
-                # # plot bouding boxes
-                # plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, 'random_patched/', properpatchedname), class_names=class_names)
+            # Random patch
+            #maak een random patch, transformeer hem en voeg hem toe aan beeld
+            random_patch = torch.rand(adv_patch_cpu.size()).cuda()
+            adv_batch_t = patch_transformer(random_patch, lab_fake_batch, img_size, do_rotate=True, rand_loc=False)
+            p_img_batch = patch_applier(img_fake_batch, adv_batch_t)
+            p_img = p_img_batch.squeeze(0)
+            p_img_pil = transforms.ToPILImage('RGB')(p_img.cuda())
+            properpatchedname = name + "_rdp.png"
+            # p_img_pil.save(os.path.join(savedir, 'random_patched/', properpatchedname))
+            
+            #genereer een label file voor het beeld met random patch
+            txtname = properpatchedname.replace('.png', '.txt')
+            txtpath = os.path.abspath(os.path.join(savedir, 'random_patched/', 'yolo-labels/', txtname))
+            boxes = do_detect(darknet_model, p_img_pil, conf_thresh, nms_thresh, True)
+            textfile = open(txtpath,'w+')
+            for box in boxes:
+                cls_id = box[6]
+                if(cls_id == 0):   #if person
+                    x_center = box[0]
+                    y_center = box[1]
+                    width = box[2]
+                    height = box[3]
+                    textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
+                    noise_results.append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
+            textfile.close()
 
-        with open('clean_results.json', 'w') as fp:
-            json.dump(clean_results, fp)
-        # with open('noise_results.json', 'w') as fp:
-        #     json.dump(noise_results, fp)
-        with open(f'patch_results_{e}.json', 'w') as fp:
-            json.dump(patch_results, fp)
+            # plot bouding boxes
+            print("Patch: random", "\timage:", properpatchedname, "\tBoxes:", len(boxes))
+            plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, 'random_patched/', properpatchedname), class_names=class_names)
+
+    with open(os.path.join(savedir,'clean_results.json'), 'w') as fp:
+        json.dump(clean_results, fp)
+    with open(os.path.join(savedir,'noise_results.json'), 'w') as fp:
+        json.dump(noise_results, fp)
+    for e in patch_results:
+        with open(os.path.join(savedir,f'patch_results_{e}.json'), 'w') as fp:
+            json.dump(patch_results[e], fp)
             
 
