@@ -24,19 +24,31 @@ if __name__ == '__main__':
     weightfile = "weights/yolo.weights"
     
     patchdir = "pics/"
+    # patchfiles = {"binoculars": "binoculars.jpg",
+    # "cello": "cello__1_.jpg",
+    # "class_detection": "class_detection.png",
+    # "class_only": "class_only.png",
+    # "electric_fan": "electric_fan.jpg",
+    # "horns_dream": "horns_dream.jpg",
+    # "lime_dream": "lime_dream.jpg",
+    # "object_upper": "object_upper.png",
+    # "tick": "tick.jpg"
+    # }
     # patchfiles = {"2": "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
     # "150": "20220223-161301_ObjectOnlyPaper_150_0.7733585238456726.jpg",
     # "circle": "toast_270.png",
     # "original": "object_score.png"}
-    patchfiles = {"masked_scaled_white": "masked_patch_scaled_white.jpg",
-    "masked_inverse_scaled_white": "masked_patch_inverse_scaled_white.jpg"}
+    # patchfiles = {"masked_scaled_white": "masked_patch_scaled_white.jpg",
+    # "masked_inverse_scaled_white": "masked_patch_inverse_scaled_white.jpg"}
+    patchfiles = {"masked_trained_519": "masked/20220301-150155_ObjectOnlyPaper_519_0.7592455148696899.jpg"}
+    # "masked_train_overlay": "masked/20220228-223836_ObjectOnlyPaper_3_0.8943374156951904.jpg"}
     # patchfiles = {2: "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
     # 100: "20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg", 
     # 150: "20220223-161301_ObjectOnlyPaper_150_0.7733585238456726.jpg"} # key is the epoch number
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
-    savedir = "testing/labelled_masked"
+    savedir = "testing/labelled_mask"
     conf_thresh = 0.6
     nms_thresh = 0.4
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
@@ -61,6 +73,9 @@ if __name__ == '__main__':
     clean_results = []
     noise_results = []
     patch_results = {}
+    results_stats = {"clean":0}
+    for e in patchfiles:
+        results_stats[e] = 0
     
     for e in patchfiles:
         savedirs.append(os.path.join(savedir, f'proper_patched_{e}/', 'yolo-labels/'))
@@ -131,10 +146,11 @@ if __name__ == '__main__':
                                                                     height.item()],
                                         'score': box[4].item(),
                                         'category_id': 1})
+                    results_stats["clean"] += 1
             textfile.close()
 
             # plot bouding boxes
-            print("\nClean image:", cleanname, "\tBoxes:", len(boxes))
+            print("\nClean \t\t\timage:", cleanname, "\tBoxes:", len(boxes))
             plot_boxes(padded_img, boxes, savename=os.path.join(savedir, 'clean/', cleanname), class_names=class_names)
 
             #lees deze labelfile terug in als tensor            
@@ -177,6 +193,7 @@ if __name__ == '__main__':
                         height = box[3]
                         textfile.write(f'{cls_id} {x_center} {y_center} {width} {height}\n')
                         patch_results[e].append({'image_id': name, 'bbox': [x_center.item() - width.item() / 2, y_center.item() - height.item() / 2, width.item(), height.item()], 'score': box[4].item(), 'category_id': 1})
+                        results_stats[e] += 1
                 textfile.close()
                 
                 # plot bouding boxes
@@ -210,7 +227,7 @@ if __name__ == '__main__':
             textfile.close()
 
             # plot bouding boxes
-            print("Patch: random", "\timage:", properpatchedname, "\tBoxes:", len(boxes))
+            print("Patch: random", "\t\timage:", properpatchedname, "\tBoxes:", len(boxes))
             plot_boxes(p_img_pil, boxes, savename=os.path.join(savedir, 'random_patched/', properpatchedname), class_names=class_names)
 
     with open(os.path.join(savedir,'clean_results.json'), 'w') as fp:
@@ -220,5 +237,11 @@ if __name__ == '__main__':
     for e in patch_results:
         with open(os.path.join(savedir,f'patch_results_{e}.json'), 'w') as fp:
             json.dump(patch_results[e], fp)
+
+    for key in patchfiles:
+        if key == "clean":
+            print(key, results_stats[key])
+        else:
+            print(f"{key}\tpeople detected:{results_stats[key]}\t% people hidden:{(1-(results_stats[key]/results_stats['clean']))*100}%")
             
 
