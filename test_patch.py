@@ -40,7 +40,32 @@ if __name__ == '__main__':
     # "original": "object_score.png"}
     # patchfiles = {"masked_scaled_white": "masked_patch_scaled_white.jpg",
     # "masked_inverse_scaled_white": "masked_patch_inverse_scaled_white.jpg"}
-    patchfiles = {"masked_trained_519": "masked/20220301-150155_ObjectOnlyPaper_519_0.7592455148696899.jpg"}
+    # patchfiles = {"masked_trained_460": "masked/20220301-150155_ObjectOnlyPaper_460_0.7586309313774109.jpg",
+    # "masked_trained_500": "masked/20220301-150155_ObjectOnlyPaper_500_0.7578548789024353.jpg",
+    # "masked_trained_550": "masked/20220301-150155_ObjectOnlyPaper_550_0.7591909170150757.jpg",
+    # "masked_trained_580": "masked/20220301-150155_ObjectOnlyPaper_580_0.7569643259048462.jpg",
+    # "masked_trained_600": "masked/20220301-150155_ObjectOnlyPaper_600_0.7555060386657715.jpg",
+    # "masked_trained_650": "masked/20220301-150155_ObjectOnlyPaper_650_0.7541428804397583.jpg",
+    # "masked_trained_680": "masked/20220301-150155_ObjectOnlyPaper_680_0.7520384192466736.jpg",
+    # "masked_trained_700": "masked/20220301-150155_ObjectOnlyPaper_700_0.75697922706604.jpg",
+    # "masked_trained_1090": "masked/20220301-150155_ObjectOnlyPaper_1090_0.7551037073135376.jpg"
+    # }
+
+    # patchfiles = {"masked_trained_220": "masked/20220301-150155_ObjectOnlyPaper_220_0.9231265187263489.jpg",
+    # "masked_trained_300": "masked/20220301-150155_ObjectOnlyPaper_300_0.7750753164291382.jpg",
+    # "masked_trained_330": "masked/20220301-150155_ObjectOnlyPaper_330_0.7638962864875793.jpg",
+    # "masked_trained_360": "masked/20220301-150155_ObjectOnlyPaper_360_0.7627858519554138.jpg",
+    # "masked_trained_390": "masked/20220301-150155_ObjectOnlyPaper_390_0.7624249458312988.jpg"
+    # }
+
+    patchfiles = {"masked_trained_1841": "masked/20220301-150155_ObjectOnlyPaper_1841_0.7546290159225464.jpg"}
+
+    # patchfiles = {"merge_masked_550": "merge_masked_550.jpg",
+    # "merge_both_550_382": "merge_both_550_382.jpg",
+    # "merge_inverse_382": "merge_inverse_382.jpg"}
+
+    # patchfiles = {"object_class": "patches/adversarial_patches/1901.bmp"}
+
     # "masked_train_overlay": "masked/20220228-223836_ObjectOnlyPaper_3_0.8943374156951904.jpg"}
     # patchfiles = {2: "20220223-161301_ObjectOnlyPaper_2_1.106204867362976.jpg",
     # 100: "20220223-161301_ObjectOnlyPaper_100_0.7749974727630615.jpg", 
@@ -242,6 +267,6 @@ if __name__ == '__main__':
         if key == "clean":
             print(key, results_stats[key])
         else:
-            print(f"{key}\tpeople detected:{results_stats[key]}\t% people hidden:{(1-(results_stats[key]/results_stats['clean']))*100}%")
+            print(f"{key}\tpeople detected:{results_stats[key]}\t% people hidden: {(1-(results_stats[key]/results_stats['clean']))*100} %")
             
 
