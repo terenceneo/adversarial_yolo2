@@ -58,11 +58,13 @@ if __name__ == '__main__':
     # "masked_trained_390": "masked/20220301-150155_ObjectOnlyPaper_390_0.7624249458312988.jpg"
     # }
 
-    patchfiles = {"masked_trained_1841": "masked/20220301-150155_ObjectOnlyPaper_1841_0.7546290159225464.jpg"}
+    # patchfiles = {"masked_trained_1841": "masked/20220301-150155_ObjectOnlyPaper_1841_0.7546290159225464.jpg"}
 
     # patchfiles = {"merge_masked_550": "merge_masked_550.jpg",
     # "merge_both_550_382": "merge_both_550_382.jpg",
     # "merge_inverse_382": "merge_inverse_382.jpg"}
+    patchfiles = {"merge_inverse_1": "masked_inverse/20220228-223836_ObjectOnlyPaper_1_0.9046263098716736.jpg"}
+    
 
     # patchfiles = {"object_class": "patches/adversarial_patches/1901.bmp"}
 
@@ -73,7 +75,7 @@ if __name__ == '__main__':
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
-    savedir = "testing/labelled_mask"
+    savedir = "testing/labelled_mask_merge"
     conf_thresh = 0.6
     nms_thresh = 0.4
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
