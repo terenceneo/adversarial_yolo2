@@ -49,6 +49,10 @@ class PatchTrainer(object):
         :return: Nothing
         """
 
+        mask_path = "saved_patches/dsologo.jpg"
+        initial_patch_path = "pics/object_score.png"
+        outdir = "pics/masked_outline/"
+
         img_size = self.darknet_model.height
         batch_size = self.config.batch_size
         n_epochs = 10000
@@ -57,7 +61,7 @@ class PatchTrainer(object):
         time_str = time.strftime("%Y%m%d-%H%M%S")
 
         # mask to create shape on patch
-        mask = self.read_image("saved_patches/dsologo.jpg")
+        mask = self.read_image(mask_path)
         mask = transforms.Grayscale(num_output_channels=1)(mask)
         mask_img = transforms.ToPILImage()(mask)
         mask_img_inverted = mask_img.convert('L').point(lambda x : 0 if x > 200 else 255, mode='1')
@@ -65,16 +69,21 @@ class PatchTrainer(object):
         mask_invert = transforms.ToTensor()(mask_img_inverted)
         mask = transforms.ToTensor()(mask_img)
 
+        # outline
+        edge_img = mask_img_inverted.filter(PIL.ImageFilter.FIND_EDGES)
+        edge_img = edge_img.convert('L').point(lambda x : 0 if x > 200 else 255, mode='1')
+        edge = transforms.ToTensor()(edge_img)
+
         # Generate stating point
         # adv_patch_cpu = self.generate_patch("gray")
-        adv_patch_cpu = self.read_image("pics/object_score.png")
+        adv_patch_cpu = self.read_image(initial_patch_path)
         # adv_patch_cpu = self.read_image("saved_patches/patchnew0.jpg")
         
         # masking patch
         # patch_img = transforms.ToPILImage('RGB')(adv_patch_cpu)
         # patch_img = Image.composite(Image.new('RGB', (self.config.patch_size, self.config.patch_size), color=(255,255,255)), patch_img, mask=mask_img)
         # adv_patch_cpu = transforms.ToTensor()(patch_img)
-        adv_patch_cpu = adv_patch_cpu * mask + mask_invert
+        adv_patch_cpu = (adv_patch_cpu * mask + mask_invert) * edge # added * edge for outline
 
         adv_patch_cpu.requires_grad_(True)
         adv_patch_cpu_temp = clone(adv_patch_cpu)
@@ -110,7 +119,7 @@ class PatchTrainer(object):
                     # patch_img = Image.composite(Image.new('RGB', (self.config.patch_size, self.config.patch_size), color=(255,255,255)), patch_img, mask=mask_img)
                     # adv_patch_cpu = transforms.ToTensor()(patch_img)
                     # adv_patch_cpu.requires_grad_(True)
-                    adv_patch = (adv_patch_cpu * mask + mask_invert).cuda()
+                    adv_patch = ((adv_patch_cpu * mask + mask_invert) * edge).cuda()  # added * edge for outline
                     adv_batch_t = self.patch_transformer(adv_patch, lab_batch, img_size, do_rotate=True, rand_loc=False)
                     p_img_batch = self.patch_applier(img_batch, adv_batch_t)
                     p_img_batch = F.interpolate(p_img_batch, (self.darknet_model.height, self.darknet_model.width))
@@ -168,7 +177,7 @@ class PatchTrainer(object):
             # save patch at end of epoch
             # im = transforms.ToPILImage('RGB')(adv_patch_cpu)
             # plt.imshow(im)
-            # plt.savefig(f'pics/{time_str}_{self.config.patch_name}_{epoch}.png')
+            # plt.savefig(f'{outdir}{time_str}_{self.config.patch_name}_{epoch}.png')
 
             scheduler.step(ep_loss)
             if True:
@@ -182,7 +191,7 @@ class PatchTrainer(object):
                 #plt.imshow(im)
                 #plt.show()
                 # im.save("saved_patches/patchnew1.jpg")
-                im.save(f'pics/masked/{time_str}_{self.config.patch_name}_{epoch}_{ep_loss}.jpg')
+                im.save(f'{outdir}{time_str}_{self.config.patch_name}_{epoch}_{ep_loss}.jpg')
                 del adv_batch_t, output, max_prob, det_loss, p_img_batch, nps_loss, tv_loss, loss
                 torch.cuda.empty_cache()
             et0 = time.time()
