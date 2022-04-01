@@ -15,14 +15,19 @@ from load_data import PatchTransformer, PatchApplier, InriaDataset
 import json
 from tqdm import tqdm
 
+import torchvision.models as models
+
 
 if __name__ == '__main__':
     print("Setting everything up")
     imgdir = "inria/Test/pos"
     # imgdir = "testing/testimages"
-    cfgfile = "cfg/yolo.cfg"
-    weightfile = "weights/yolo.weights"
+    # cfgfile = "cfg/yolo.cfg"
+    # weightfile = "weights/yolo.weights"
     
+    cfgfile = "cfg/resnet18.cfg"
+    weightfile = "weights/resnet18.weights"
+
     patchdir = "pics/"
     # patchfiles = {"binoculars": "binoculars.jpg",
     # "cello": "cello__1_.jpg",
@@ -63,7 +68,7 @@ if __name__ == '__main__':
     # patchfiles = {"merge_masked_550": "merge_masked_550.jpg",
     # "merge_both_550_382": "merge_both_550_382.jpg",
     # "merge_inverse_382": "merge_inverse_382.jpg"}
-    patchfiles = {"merge_inverse_1": "masked_inverse/20220228-223836_ObjectOnlyPaper_1_0.9046263098716736.jpg"}
+    patchfiles = {"masked_outline_582": "masked_outline/20220314-150408_ObjectOnlyPaper_582_0.8545225262641907.jpg"} # change this
     
 
     # patchfiles = {"object_class": "patches/adversarial_patches/1901.bmp"}
@@ -75,20 +80,22 @@ if __name__ == '__main__':
     # patchfile = "/home/wvr/Pictures/individualImage_upper_body.png"
     #patchfile = "/home/wvr/Pictures/class_only.png"
     #patchfile = "/home/wvr/Pictures/class_transfer.png"
-    savedir = "testing/labelled_mask_merge"
+    savedir = "testing/labelled_masked_outline" # change this
     conf_thresh = 0.6
     nms_thresh = 0.4
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
 
-    darknet_model = Darknet(cfgfile)
-    darknet_model.load_weights(weightfile)
+    # darknet_model = Darknet(cfgfile)
+    # darknet_model.load_weights(weightfile)
+    darknet_model = models.resnet18(pretrained=True)
     darknet_model = darknet_model.eval().cuda()
     patch_applier = PatchApplier().cuda()
     patch_transformer = PatchTransformer().cuda()
 
     batch_size = 1
     max_lab = 14
-    img_size = darknet_model.height
+    # img_size = darknet_model.height
+    img_size = 300
 
     patch_size = 300
     
