@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # img_size = 300
 
     if save_video:
-        savedirs = [os.path.join(savedir, 'output')]
+        savedirs = [os.path.join(savedir)]
         # make saving directory if not exist
         for dir in savedirs:
             if not os.path.exists(dir):
@@ -150,6 +150,9 @@ if __name__ == '__main__':
                     if save_video:
                         # Write the frame into output file
                         out.write(final_image)
+                
+                else: # not ret
+                    break
             
             cap.release()
             if save_video:
