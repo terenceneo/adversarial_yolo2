@@ -39,7 +39,7 @@ if __name__ == '__main__':
     save_video = True
 
     viddir = "../../data/videos/humans"
-    cfgfile = "cfg/yolo.cfg"
+    cfgfile = "cfg/yolo_HD.cfg"
     weightfile = "weights/yolo.weights"
 
     savedir = "testing/videos" # change this
@@ -53,8 +53,8 @@ if __name__ == '__main__':
     darknet_model = darknet_model.eval().cuda()
 
     batch_size = 1
-    img_size = darknet_model.height
-    # img_size = 300
+    img_width = darknet_model.width
+    img_height = darknet_model.height
 
     if save_video:
         savedirs = [os.path.join(savedir)]
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 savename = os.path.join(savedir, f"{name}_{suffix}.avi")
                 out = cv2.VideoWriter(savename,
                                     cv2.VideoWriter_fourcc('M','J','P','G'),
-                                    fps, (img_size,img_size))
+                                    fps, (img_width,img_height))
 
             frames = 0
             start = time.time()
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                             padding = (w - h) / 2
                             padded_img = Image.new('RGB', (w, w), color=(127,127,127))
                             padded_img.paste(img, (0, int(padding)))
-                    resize = transforms.Resize((img_size,img_size))
+                    resize = transforms.Resize((img_width,img_height))
                     padded_img = resize(padded_img)
                     cleanname = name + ".png"
                     

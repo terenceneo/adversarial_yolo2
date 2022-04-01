@@ -25,7 +25,7 @@ class Reorg(nn.Module):
         H = x.data.size(2)
         W = x.data.size(3)
         assert(H % stride == 0)
-        assert(W % stride == 0)
+        assert(W % stride == 0), f"W={W} while stride={stride}"
         ws = stride
         hs = stride
         #Simen: edited as suggested here: https://github.com/marvis/pytorch-yolo2/issues/129#issue-350726531
