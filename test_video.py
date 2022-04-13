@@ -38,11 +38,11 @@ if __name__ == '__main__':
     view_video = False
     save_video = True
 
-    viddir = "../../data/videos/humans"
+    viddir = "../../data/videos/outline patch"
     cfgfile = "cfg/yolo_HD.cfg"
     weightfile = "weights/yolo.weights"
 
-    savedir = "testing/videos" # change this
+    savedir = "testing/videos/outline patch" # change this
     suffix = "yolo" # to append to output video filename
     conf_thresh = 0.6
     nms_thresh = 0.4
@@ -116,7 +116,6 @@ if __name__ == '__main__':
                             padded_img.paste(img, (0, int(padding)))
                     resize = transforms.Resize((img_width,img_height))
                     padded_img = resize(padded_img)
-                    cleanname = name + ".png"
                     
                     # detecting with model
                     boxes = do_detect(darknet_model, padded_img, conf_thresh, nms_thresh, True)
