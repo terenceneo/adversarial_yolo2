@@ -267,14 +267,18 @@ def plot_boxes(img1, boxes, savename=None, class_names=None):
             cls_conf = round(float(box[5]),2)
             cls_id = box[6]
             # print('[%i]%s: %f' % (cls_id, class_names[cls_id], cls_conf))
-            classes = len(class_names)
-            offset = cls_id * 123457 % classes
-            red   = get_color(2, offset, classes)
-            green = get_color(1, offset, classes)
-            blue  = get_color(0, offset, classes)
-            rgb = (red, green, blue)
-            draw.text((x1, y1), class_names[cls_id] + str(cls_conf), fill=rgb)
-            draw.rectangle([x1, y1, x2, y2], outline = rgb)
+            if cls_id == 0: # only plot person class
+                classes = len(class_names)
+                offset = cls_id * 123457 % classes
+                red   = get_color(2, offset, classes)
+                green = get_color(1, offset, classes)
+                blue  = get_color(0, offset, classes)
+                rgb = (red, green, blue)
+                stroke_width_multiplier = 250
+                font_multiplier = 60
+                font=ImageFont.truetype("arialbd.ttf", size=round(width/font_multiplier))
+                draw.text((x1, y1), class_names[cls_id] + str(cls_conf), fill=rgb, font=font)
+                draw.rectangle([x1, y1, x2, y2], outline = rgb, width=round(width/stroke_width_multiplier))
     if savename:
         # print("save plot results to %s" % savename)
         img.save(savename)
