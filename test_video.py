@@ -38,11 +38,11 @@ if __name__ == '__main__':
     view_video = False
     save_video = True
 
-    viddir = "../../data/videos/outline patch"
+    viddir = "../../data/videos/outline patch_v2"
     cfgfile = "cfg/yolo_HD.cfg"
     weightfile = "weights/yolo.weights"
 
-    savedir = "testing/videos/outline patch" # change this
+    savedir = "testing/videos/outline patch_v2" # change this
     suffix = "yolo" # to append to output video filename
     conf_thresh = 0.6
     nms_thresh = 0.4
