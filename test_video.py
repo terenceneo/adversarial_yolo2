@@ -39,12 +39,13 @@ if __name__ == '__main__':
     save_video = True
 
     viddir = "../../data/videos/outline patch_v2"
-    cfgfile = "cfg/yolo_HD.cfg"
+    cfgfile = "cfg/yolo.cfg"
     weightfile = "weights/yolo.weights"
 
     savedir = "testing/videos/outline patch_v2" # change this
+    prefix = "robust_downres"
     suffix = "yolo" # to append to output video filename
-    conf_thresh = 0.6
+    conf_thresh = 0.4
     nms_thresh = 0.4
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
 
@@ -80,18 +81,18 @@ if __name__ == '__main__':
 
             assert cap.isOpened(), 'Cannot capture source'
 
-            # Default resolutions of the frame are obtained.The default resolutions are system dependent.
+            # Default resolutions of the input frame are obtained.The default resolutions are system dependent.
             # We convert the resolutions from float to integer.
-            # frame_width = int(cap.get(3))
-            # frame_height = int(cap.get(4))
+            frame_width = int(cap.get(3))
+            frame_height = int(cap.get(4))
             fps = cap.get(cv2.CAP_PROP_FPS)
             
             if save_video:
                 # Define the codec and create VideoWriter object.The output is stored in savename file.
-                savename = os.path.join(savedir, f"{name}_{suffix}.avi")
+                savename = os.path.join(savedir, f"{prefix}_{name}_{suffix}.avi")
                 out = cv2.VideoWriter(savename,
                                     cv2.VideoWriter_fourcc('M','J','P','G'),
-                                    fps, (img_width,img_height))
+                                    fps, (frame_width,frame_height))
 
             frames = 0
             start = time.time()
@@ -115,10 +116,10 @@ if __name__ == '__main__':
                             padded_img = Image.new('RGB', (w, w), color=(127,127,127))
                             padded_img.paste(img, (0, int(padding)))
                     resize = transforms.Resize((img_width,img_height))
-                    padded_img = resize(padded_img)
+                    resized_img = resize(padded_img)
                     
                     # detecting with model
-                    boxes = do_detect(darknet_model, padded_img, conf_thresh, nms_thresh, True)
+                    boxes = do_detect(darknet_model, resized_img, conf_thresh, nms_thresh, True)
                     # textfile = open(txtpath,'w+')
                     for box in boxes:
                         cls_id = box[6]
@@ -136,9 +137,14 @@ if __name__ == '__main__':
                     # convert back to np.array for cv2
                     final_image = np.asarray(plotted_img)
 
-                    # add frame number
-                    frames += 1
-                    final_image = add_frame_number(final_image)
+                    # crop away padding
+                    x = (final_image.shape[1] - frame_width) / 2
+                    y = (final_image.shape[0] - frame_height) / 2
+                    final_image = final_image[int(y):int(y+frame_height), int(x):int(x+frame_width)]
+
+                    # # add frame number
+                    # frames += 1
+                    # final_image = add_frame_number(final_image)
                     
                     if view_video:
                         cv2.imshow(videofile, final_image)
