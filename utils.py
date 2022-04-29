@@ -241,7 +241,7 @@ def plot_boxes_cv2(img, boxes, savename=None, class_names=None, color=None):
         cv2.imwrite(savename, img)
     return img
 
-def plot_boxes(img1, boxes, savename=None, class_names=None):
+def plot_boxes(img1, boxes, savename=None, class_names=None, color=None):
     img = img1.copy()
     colors = torch.FloatTensor([[1,0,1],[0,0,1],[0,1,1],[0,1,0],[1,1,0],[1,0,0]]);
     def get_color(c, x, max_val):
@@ -268,12 +268,15 @@ def plot_boxes(img1, boxes, savename=None, class_names=None):
             cls_id = box[6]
             # print('[%i]%s: %f' % (cls_id, class_names[cls_id], cls_conf))
             if cls_id == 0: # only plot person class
-                classes = len(class_names)
-                offset = cls_id * 123457 % classes
-                red   = get_color(2, offset, classes)
-                green = get_color(1, offset, classes)
-                blue  = get_color(0, offset, classes)
-                rgb = (red, green, blue)
+                if color:
+                    rgb = color
+                else:
+                    classes = len(class_names)
+                    offset = cls_id * 123457 % classes
+                    red   = get_color(2, offset, classes)
+                    green = get_color(1, offset, classes)
+                    blue  = get_color(0, offset, classes)
+                    rgb = (red, green, blue)                    
                 stroke_width_multiplier = 250
                 font_multiplier = 60
                 font=ImageFont.truetype("arialbd.ttf", size=round(width/font_multiplier))
