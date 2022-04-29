@@ -48,27 +48,31 @@ def add_text(img, txt, frame_width, frame_height, line, rgb=(255,0,0)):
 if __name__ == '__main__':
     print("Setting everything up")
 
+    # parameters to change
     view_video = False
     save_video = True
+
+    detect_on_downsized_img = True
+    downsized_cfgfile = "cfg/yolo.cfg"
+    downsized_img_model_name = "DSO Model"
+
+    detect_on_modelsized_img = True
+    darknet_cfgfile = "cfg/yolo_HD.cfg"
+    modelsized_img_model_name = "YOLOv2"
 
     conf_thresh = 0.4
     nms_thresh = 0.4
 
     viddir = "../../data/videos/outline patch_v2"
-    downsized_cfgfile = "cfg/yolo.cfg"
-    darknet_cfgfile = "cfg/yolo_HD.cfg"
-    weightfile = "weights/yolo.weights"
 
-    savedir = "testing/videos/outline patch_v2" # change this
+    savedir = "testing/videos/outline patch_v2"
     prefix = "bothplots"
     suffix = f"yolo_{conf_thresh}_{nms_thresh}" # to append to output video filename
     
+    # fixed variables
     class_names = open("coco-labels-2014_2017.txt", "r").readlines()
 
-    detect_on_downsized_img = True
-    downsized_img_model_name = "DSO Model"
-    detect_on_modelsized_img = True
-    modelsized_img_model_name = "YOLOv2"
+    weightfile = "weights/yolo.weights"
 
     if detect_on_downsized_img:
         downsized_model = Darknet(downsized_cfgfile)
@@ -86,8 +90,6 @@ if __name__ == '__main__':
         model_img_width = darknet_model.width
         model_img_height = darknet_model.height
         modelsized_resize = transforms.Resize((model_img_width,model_img_height))
-
-    batch_size = 1
 
     if save_video:
         savedirs = [os.path.join(savedir)]
