@@ -61,7 +61,7 @@ if __name__ == '__main__':
     modelsized_img_model_name = "YOLOv2"
 
     conf_thresh_downsized = 0.6
-    conf_thresh_modelsized = 0.7
+    conf_thresh_modelsized = 0.85
     nms_thresh = 0.4
 
     # viddir = "../../data/videos/outline patch_v2"
@@ -191,7 +191,12 @@ if __name__ == '__main__':
             # final_image = add_frame_number(final_image)
             
             if view_video:
-                cv2.imshow("Live", final_image)
+                # create fullscreen window
+                cv2.namedWindow("Live camera", cv2.WINDOW_KEEPRATIO)
+                # cv2.setWindowProperty("Live camera",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+                cv2.setWindowProperty('Live camera',cv2.WND_PROP_ASPECT_RATIO,cv2.WINDOW_KEEPRATIO)
+
+                cv2.imshow("Live camera", final_image)
                 # Press Q on keyboard to  exit
                 if cv2.waitKey(16) & 0xFF == ord('q'): # delay for 16ms
                     break
